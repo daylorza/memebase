@@ -9,6 +9,7 @@ badges from it. Stale flags over fake data, always.
 """
 
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -27,11 +28,33 @@ cache = TTLCache()
 START = time.time()
 
 
+def _proxy_url() -> str | None:
+    """Pick up an explicit proxy without trusting the whole environment.
+
+    httpx's trust_env parsing chokes on bracketed IPv6 entries in no_proxy
+    (e.g. "[::1]" -> InvalidURL at client construction), which would take
+    the backend down at startup. We read one well-formed proxy var ourselves
+    and validate it; no proxy var -> direct connection (the Atlas case).
+    """
+    for var in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"):
+        v = os.environ.get(var)
+        if not v:
+            continue
+        try:
+            httpx.URL(v)
+            return v
+        except Exception:
+            log.warning("ignoring malformed proxy env var %s", var)
+    return None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = httpx.AsyncClient(
         timeout=config.HTTP_TIMEOUT,
         headers={"User-Agent": config.USER_AGENT},
+        proxy=_proxy_url(),
+        trust_env=False,
     )
     app.state.client = client
     app.state.tasks = scheduler.start(client, cache)
