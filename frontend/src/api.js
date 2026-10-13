@@ -1,17 +1,20 @@
 // All data comes from our own backend — never third-party APIs directly.
 // Every response carries { data, stale, fetched_at }; callers surface stale.
+// BASE_URL is '/' in dev and '/memedesk/' in the Atlas/tailnet deploy,
+// so API calls stay under the same subpath as the page.
+const BASE = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')
 
 async function get(path) {
-  const r = await fetch(path, { headers: { accept: 'application/json' } })
+  const r = await fetch(BASE + path.replace(/^\//, ''), { headers: { accept: 'application/json' } })
   if (!r.ok) throw new Error(`GET ${path} → ${r.status}`)
   return r.json()
 }
 
 export const api = {
-  trending: () => get('/api/trending'),
-  regime: () => get('/api/regime'),
-  watchlist: () => get('/api/watchlist'),
-  token: (mint) => get(`/api/token/${mint}`),
+  trending: () => get('api/trending'),
+  regime: () => get('api/regime'),
+  watchlist: () => get('api/watchlist'),
+  token: (mint) => get(`api/token/${mint}`),
 }
 
 export function fmtUsd(n, digits = 2) {
