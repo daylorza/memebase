@@ -12,6 +12,7 @@ async function get(path) {
 
 export const api = {
   trending: () => get('api/trending'),
+  movers: () => get('api/movers'),
   regime: () => get('api/regime'),
   watchlist: () => get('api/watchlist'),
   token: (mint) => get(`api/token/${mint}`),

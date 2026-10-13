@@ -12,9 +12,18 @@ GECKO_TOKEN_URL = "https://www.geckoterminal.com/solana/tokens/{}"
 DEX_TOKEN_URL = "https://dexscreener.com/solana/{}"
 
 
+def _pool_addr(pool: str | None) -> str | None:
+    # GeckoTerminal API ids look like "solana_<address>"; the website wants
+    # just the address.
+    if not pool:
+        return None
+    return pool.split("_", 1)[-1] if "_" in pool else pool
+
+
 def chart_url(mint: str | None, pool: str | None = None, gecko_indexed=()) -> str | None:
-    if pool:
-        return GECKO_POOL_URL.format(pool)
+    addr = _pool_addr(pool)
+    if addr:
+        return GECKO_POOL_URL.format(addr)
     if not mint:
         return None
     if mint in gecko_indexed:

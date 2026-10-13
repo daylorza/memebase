@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, fmtUsd, timeAgo } from './api.js'
 import TrendingTable from './components/TrendingTable.jsx'
+import MoversPanel from './components/MoversPanel.jsx'
 import RegimeStrip from './components/RegimeStrip.jsx'
 
 function usePoll(fn, intervalMs) {
@@ -25,6 +26,7 @@ function usePoll(fn, intervalMs) {
 
 export default function App() {
   const [trending, trendingErr] = usePoll(api.trending, 60000)
+  const [movers] = usePoll(api.movers, 60000)
   const [regime] = usePoll(api.regime, 60000)
   const [watchlist] = usePoll(api.watchlist, 60000)
 
@@ -38,6 +40,7 @@ export default function App() {
       {trendingErr && <div className="banner">Backend unreachable: {trendingErr}. Is it running on :8000?</div>}
 
       <RegimeStrip payload={regime} />
+      <MoversPanel payload={movers} />
       <TrendingTable payload={trending} />
 
       <div className="panel">

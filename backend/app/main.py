@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from . import config, links, scheduler, watchlist
+from . import config, links, momentum, scheduler, watchlist
 from .cache import TTLCache
 from .clients import dexscreener
 
@@ -170,6 +170,29 @@ async def regime() -> dict:
         "data": entry["data"],
         "stale": entry["stale"],
         "fetched_at": entry["fetched_at"],
+    }
+
+
+@app.get("/api/movers")
+async def movers() -> dict:
+    """Early momentum: biggest 30-min gainers with real liquidity.
+
+    Computed from our own market-poll time series — catches heat before
+    the lagging trending list does.
+    """
+    market = (await cache.peek("market")) or {}
+    gecko_indexed = set((await cache.peek("gecko_indexed")) or [])
+    trending_mints = set((await cache.peek("trending_mints")) or [])
+    indexed = gecko_indexed | trending_mints
+    data = momentum.compute(market)
+    for d in data:
+        d["chart_url"] = links.chart_url(d["mint"], gecko_indexed=indexed)
+    return {
+        "data": data,
+        "count": len(data),
+        "warming_up": momentum.warming_up(),
+        "lookback_min": 30,
+        "fetched_at": time.time(),
     }
 
 

@@ -10,6 +10,7 @@ import time
 
 from . import config
 from . import links
+from . import momentum
 from . import watchlist
 from .clients import coingecko, dexscreener, geckoterminal, jupiter
 
@@ -63,6 +64,7 @@ async def poll_market(client, cache) -> None:
     merged = (await cache.peek("market")) or {}
     merged.update(fresh)
     await cache.set("market", merged)
+    momentum.record(merged)  # feed the early-momentum time series
     log.info("market refreshed: %d/%d mints", len(fresh), len(mints))
 
 
