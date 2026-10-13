@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from . import config, scheduler, watchlist
+from . import config, links, scheduler, watchlist
 from .cache import TTLCache
 from .clients import dexscreener
 
@@ -154,10 +154,12 @@ async def token(mint: str) -> dict:
     except Exception:
         log.exception("on-demand fetch for %s failed", mint)
     data = entry["data"] or cached
+    gecko_indexed = set((await cache.peek("gecko_indexed")) or [])
     return {
         "data": data,
         "stale": entry["stale"] if entry["data"] else True,
         "fetched_at": entry["fetched_at"],
+        "chart_url": links.chart_url(mint, gecko_indexed=gecko_indexed),
     }
 
 
@@ -175,6 +177,7 @@ async def regime() -> dict:
 async def get_watchlist() -> dict:
     market = (await cache.peek("market")) or {}
     ticks = ((await cache.peek("ticks")) or {}).get("prices", {})
+    gecko_indexed = set((await cache.peek("gecko_indexed")) or [])
     items = []
     for w in watchlist.WATCHLIST:
         item = dict(w)
@@ -183,6 +186,7 @@ async def get_watchlist() -> dict:
             item["market"] = md
         if w["mint"] in ticks:
             item["tick_price"] = ticks[w["mint"]]
+        item["chart_url"] = links.chart_url(w["mint"], gecko_indexed=gecko_indexed)
         items.append(item)
     return {"data": items, "count": len(items)}
 

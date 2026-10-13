@@ -32,6 +32,14 @@ export function fmtPct(n) {
   return s + Number(n).toFixed(2) + '%'
 }
 
+export function fmtPrice(n) {
+  if (n === null || n === undefined || Number.isNaN(n)) return '—'
+  if (n === 0) return '$0'
+  if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  if (n >= 1) return '$' + parseFloat(n.toFixed(4))
+  return '$' + parseFloat(n.toPrecision(4))
+}
+
 export function timeAgo(ts) {
   if (!ts) return 'never'
   const s = Math.max(0, Math.floor(Date.now() / 1000 - ts))

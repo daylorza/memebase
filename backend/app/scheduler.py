@@ -9,6 +9,7 @@ import logging
 import time
 
 from . import config
+from . import links
 from . import watchlist
 from .clients import coingecko, dexscreener, geckoterminal, jupiter
 
@@ -28,9 +29,25 @@ async def _loop(name: str, interval: float, fn, *args) -> None:
 
 async def poll_trending(client, cache) -> None:
     data = await geckoterminal.fetch_trending(client)
+    for d in data:
+        # Trending pools come from GeckoTerminal, so the pool page always resolves.
+        d["chart_url"] = links.chart_url(d.get("mint"), pool=d.get("pool"))
     await cache.set("trending", data)
     await cache.set("trending_mints", [d["mint"] for d in data if d.get("mint")])
     log.info("trending refreshed: %d pools", len(data))
+
+
+async def poll_gecko_index(client, cache) -> None:
+    """Which watchlist mints does GeckoTerminal actually index? (cheap: 1 call / 10 min)
+
+    Drives the GeckoTerminal-first / DexScreener-fallback chart links.
+    """
+    mints = watchlist.mints()
+    if not mints:
+        return
+    batch = await geckoterminal.fetch_tokens_batch(client, mints)
+    await cache.set("gecko_indexed", sorted(batch.keys()))
+    log.info("gecko index refreshed: %d/%d watchlist mints indexed", len(batch), len(mints))
 
 
 async def poll_market(client, cache) -> None:
@@ -152,4 +169,5 @@ def start(client, cache) -> list[asyncio.Task]:
         asyncio.create_task(_loop("market", config.MARKET_INTERVAL, poll_market, client, cache)),
         asyncio.create_task(_loop("ticks", config.TICK_INTERVAL, poll_ticks, client, cache)),
         asyncio.create_task(_loop("regime", config.REGIME_INTERVAL, poll_regime, client, cache)),
+        asyncio.create_task(_loop("gecko_index", config.GECKO_INDEX_INTERVAL, poll_gecko_index, client, cache)),
     ]

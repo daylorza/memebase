@@ -17,6 +17,7 @@ MARKET_TTL = 40
 TICK_TTL = 20
 REGIME_TTL = 90
 TOKEN_TTL = 120  # on-demand /api/token/{mint} cache
+GECKO_INDEX_INTERVAL = 600  # how often to re-check GeckoTerminal index coverage
 
 # --- per-source minimum spacing between calls (rate-limit safety) ---
 GECKO_MIN_GAP = 2.1      # 30 req/min keyless

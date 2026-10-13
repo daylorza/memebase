@@ -44,10 +44,10 @@ export default function App() {
         <div className="panel-head"><h2>Watchlist</h2><span className="dim">{watchlist ? watchlist.count + ' seeds' : ''}</span></div>
         <div className="chips">
           {(watchlist?.data || []).map((w) => (
-            <span className="chip" key={w.mint} title={w.mint}>
+            <a className="chip token-link" key={w.mint} title={w.mint + ' — open chart'} href={w.chart_url} target="_blank" rel="noopener noreferrer">
               <b>{w.symbol}</b>
               <span className="dim">{w.market?.price_usd != null ? ' $' + w.market.price_usd : ''}</span>
-            </span>
+            </a>
           ))}
         </div>
         <p className="foot">Seed universe · prices enriched by DexScreener market cache.</p>

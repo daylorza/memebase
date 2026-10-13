@@ -1,4 +1,4 @@
-import { fmtUsd, fmtPct, timeAgo } from '../api.js'
+import { fmtPrice, fmtPct, fmtUsd, timeAgo } from '../api.js'
 
 function Stale({ stale, fetchedAt }) {
   if (!stale) return <span className="fresh" title={'updated ' + timeAgo(fetchedAt)}>● live</span>
@@ -25,11 +25,16 @@ export default function TrendingTable({ payload }) {
             {rows.map((t, i) => {
               const m = t.market || {}
               const chg = m.change_h24 ?? t.change_h24
+              const tokenCell = (
+                <><b>{t.symbol || '?'}</b> <span className="dim">{t.name || ''}</span></>
+              )
               return (
                 <tr key={t.pool || i}>
                   <td className="dim">{i + 1}</td>
-                  <td><b>{t.symbol || '?'}</b> <span className="dim">{t.name || ''}</span></td>
-                  <td className="num">{m.price_usd != null ? '$' + m.price_usd : (t.price_usd != null ? '$' + t.price_usd : '—')}</td>
+                  <td>{t.chart_url ? (
+                    <a className="token-link" href={t.chart_url} target="_blank" rel="noopener noreferrer" title="Open chart">{tokenCell}</a>
+                  ) : tokenCell}</td>
+                  <td className="num">{fmtPrice(m.price_usd ?? t.price_usd)}</td>
                   <td className={'num ' + (chg >= 0 ? 'up' : 'down')}>{fmtPct(chg)}</td>
                   <td className="num">{fmtUsd(m.volume_h24 ?? t.volume_h24, 0)}</td>
                   <td className="num">{fmtUsd(m.liquidity_usd ?? t.liquidity_usd, 0)}</td>
