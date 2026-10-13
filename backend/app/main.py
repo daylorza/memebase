@@ -16,6 +16,8 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from . import config, scheduler, watchlist
 from .cache import TTLCache
@@ -80,6 +82,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+SUBPATH = "/memedesk"
+
+
+class SubpathStripMiddleware:
+    """Strip a leading /memedesk prefix when the edge proxy left it on.
+
+    Tailscale Serve path mounts may or may not strip the matched prefix
+    before proxying; handling both cases here keeps the deploy working
+    either way, and keeps local dev (no prefix) working too.
+    """
+
+    def __init__(self, app: ASGIApp, prefix: str = SUBPATH) -> None:
+        self.app = app
+        self.prefix = prefix
+        self._raw = prefix.encode()
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            if path == self.prefix or path.startswith(self.prefix + "/"):
+                stripped = path[len(self.prefix):] or "/"
+                scope["path"] = stripped
+                raw = scope.get("raw_path")
+                if isinstance(raw, bytes) and raw.startswith(self._raw):
+                    scope["raw_path"] = raw[len(self._raw):] or b"/"
+        await self.app(scope, receive, send)
+
+
+# Added last => runs outermost, before routing sees the path.
+app.add_middleware(SubpathStripMiddleware)
 
 
 @app.get("/health")
@@ -152,3 +185,17 @@ async def get_watchlist() -> dict:
             item["tick_price"] = ticks[w["mint"]]
         items.append(item)
     return {"data": items, "count": len(items)}
+
+
+# Serve the built React frontend (Vite base '/memedesk/') at /.
+# Registered after the API routes so /api/* never falls through to statics.
+# The SubpathStripMiddleware above makes this correct whether or not the
+# edge proxy strips /memedesk before proxying.
+_DIST = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
+)
+if os.path.isdir(_DIST):
+    app.mount("/", StaticFiles(directory=_DIST, html=True), name="frontend")
+    log.info("serving frontend from %s", _DIST)
+else:
+    log.warning("frontend dist not found at %s; running API-only", _DIST)
