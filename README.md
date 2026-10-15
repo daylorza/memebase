@@ -1,47 +1,55 @@
 # Meme Desk
 
-Live, real-time investigation dashboard for Solana memecoins. Answers one question fast:
-**what's hot, who's buying it, and is it safe to touch?**
+Live, real-time investigation dashboard for Solana memecoins. Answers *"what's actually moving right now"* — before the lagging trending lists catch it.
 
-Personal project (v1). Read-only — no wallet connection, no trade execution.
+![Meme Desk dashboard](dashboard.png)
 
-## Spec & research
+## What it shows
 
-- [`docs/app-spec.md`](docs/app-spec.md) — product spec v0.1: views, feed map, architecture, milestones M0–M3
-- [`docs/api-sources.md`](docs/api-sources.md) — real-time data API research (endpoints, rate limits, fallbacks)
+- **Heating up** — early-momentum board built from our own market-poll time series. A coin only qualifies with **+3% in 30 minutes**, **≥ $20K liquidity**, **≥ $50K 24h volume**. (~35 min warmup after a backend restart.)
+- **Trending now** — GeckoTerminal trending pools, enriched with DexScreener market data: price, 24h change, volume, liquidity, mcap.
+- **Regime strip** — BTC vs the $87K wall, SOL, and PUMP, with a desk read.
+- **Watchlist** — seed universe with live prices.
+- Every token name links out to its chart — **GeckoTerminal first, DexScreener fallback**.
 
-## Architecture
+## Design
 
-```
-┌─────────────┐      ┌──────────────────┐      ┌──────────────┐
-│  Frontend   │─────▶│  Backend (FastAPI)│─────▶│ Third-party  │
-│  (React)    │◀─────│  poller + cache   │      │ APIs / WS    │
-└─────────────┘      │  + PumpPortal WS  │      └──────────────┘
-                     └──────────────────┘
-```
+UI normalized to the [shadcn/ui](https://ui.shadcn.com) design system (dark theme tokens, card / table / badge / alert patterns).
 
-The backend owns all third-party polling (rate limits are per-IP/key) and the
-single multiplexed PumpPortal WebSocket connection. The frontend talks only to
-the backend. Deployed on Atlas VPS behind Caddy.
+## Stack
 
-## Quickstart (backend)
+- **Backend:** Python / FastAPI — asyncio poll loops, TTL cache with stale flags, resilient scheduler
+- **Frontend:** React + Vite
+- **Data (all keyless, read-only):** GeckoTerminal · DexScreener · Jupiter · CoinGecko
+
+## Poll cadence
+
+| Feed | Interval |
+|---|---|
+| GeckoTerminal trending | 60s |
+| DexScreener market batch | 25s |
+| Jupiter price ticks | 12s |
+| Regime (CoinGecko + PUMP) | 60s |
+| GeckoTerminal index check | 10 min |
+
+## Quickstart
 
 ```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-# → http://localhost:8000/health
+# backend
+cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn app.main:app --port 8000
+
+# frontend
+cd frontend && npm install && npm run build   # serves from backend at /
+# or: npm run dev                              # local dev
 ```
 
-## Milestones
+API: `GET /health`, `/api/trending`, `/api/movers`, `/api/token/{mint}`, `/api/regime`, `/api/watchlist`
 
-- **M0** — Skeleton + trending: scheduler, GeckoTerminal + DexScreener polling, Today view
-- **M1** — Token detail: RugCheck safety + holder panels, chart embed
-- **M2** — Whales: FOMO leaderboard rebuild, consensus matrix, live tape, whale alerts
-- **M3** — Boards + watchlist: pump.fun panels, watchlist CRUD, snapshot history
+## Deploy
 
-## Decisions (locked)
+Runs as a systemd service behind Tailscale Serve on a `/memedesk` subpath (additive — the existing root dashboard is untouched). The backend strips the `/memedesk` prefix itself and serves the built frontend from `frontend/dist`.
 
-- Backend: Python / FastAPI · Hosting: Atlas VPS + Caddy · v1 alerts: deferred
-- Personal for now; may be sold later → auth pluggable, user-keyed data from day one
+## Status
+
+Personal build v0.1 — **read-only**: no wallet connection, no trade execution. Alerts deferred past v1. Auth is pluggable and data is user-keyed in case it's ever shared or sold.
