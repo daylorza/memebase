@@ -1,8 +1,10 @@
+
 # Meme Desk
 
 Live, real-time investigation dashboard for Solana memecoins. Answers *"what's actually moving right now"* — before the lagging trending lists catch it.
 
-![Meme Desk dashboard](dashboard.png)
+![Meme Desk dashboard](<img width="1440" height="900" alt="memedesk-dashboard" src="https://github.com/user-attachments/assets/c8349e67-e97e-4c2f-91fb-9bb64f129bf5" />)
+
 
 ## What it shows
 
