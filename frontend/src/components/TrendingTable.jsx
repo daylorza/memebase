@@ -35,7 +35,7 @@ export default function TrendingTable({ payload }) {
                     <a className="token-link" href={t.chart_url} target="_blank" rel="noopener noreferrer" title="Open chart">{tokenCell}</a>
                   ) : tokenCell}</td>
                   <td className="num">{fmtPrice(m.price_usd ?? t.price_usd)}</td>
-                  <td className={'num ' + (chg >= 0 ? 'up' : 'down')}>{fmtPct(chg)}</td>
+                  <td className="num"><span className={'badge ' + (chg >= 0 ? 'badge-up' : 'badge-down')}>{fmtPct(chg)}</span></td>
                   <td className="num">{fmtUsd(m.volume_h24 ?? t.volume_h24, 0)}</td>
                   <td className="num">{fmtUsd(m.liquidity_usd ?? t.liquidity_usd, 0)}</td>
                   <td className="num">{fmtUsd(m.market_cap ?? t.market_cap_usd ?? t.fdv_usd, 0)}</td>

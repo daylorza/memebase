@@ -30,8 +30,8 @@ export default function MoversPanel({ payload }) {
                     <a className="token-link" href={t.chart_url} target="_blank" rel="noopener noreferrer" title="Open chart">{tokenCell}</a>
                   ) : tokenCell}</td>
                   <td className="num">{fmtPrice(t.price_usd)}</td>
-                  <td className={'num ' + (t.ret_30m >= 0 ? 'up' : 'down')}>{fmtPct(t.ret_30m * 100)}</td>
-                  <td className={'num ' + ((t.change_h24 ?? 0) >= 0 ? 'up' : 'down')}>{fmtPct(t.change_h24)}</td>
+                  <td className="num"><span className={'badge ' + (t.ret_30m >= 0 ? 'badge-up' : 'badge-down')}>{fmtPct(t.ret_30m * 100)}</span></td>
+                  <td className="num"><span className={'badge ' + ((t.change_h24 ?? 0) >= 0 ? 'badge-up' : 'badge-down')}>{fmtPct(t.change_h24)}</span></td>
                   <td className="num">{fmtUsd(t.volume_h24, 0)}</td>
                   <td className="num">{fmtUsd(t.liquidity_usd, 0)}</td>
                   <td className="num">{fmtUsd(t.market_cap, 0)}</td>
